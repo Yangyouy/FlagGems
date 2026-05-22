@@ -34,6 +34,11 @@ from flag_gems.fused.fused_marlin_moe import (
     fused_marlin_moe,
 )
 from flag_gems.fused.fused_inv_rope_fp8_quant import fused_inv_rope_fp8_quant
+from flag_gems.fused.fused_marlin_moe import (
+    QUANT_TYPE_UINT4B8,
+    QUANT_TYPE_UINT8B128,
+    fused_marlin_moe,
+)
 from flag_gems.fused.fused_moe import (
     dispatch_fused_moe_kernel,
     fused_experts_impl,
