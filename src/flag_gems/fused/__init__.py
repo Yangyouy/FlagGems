@@ -30,6 +30,7 @@ from flag_gems.fused.fused_deepseek_v4_qnorm_rope_kv_rope_quant_insert import (
 )
 from flag_gems.fused.fused_marlin_moe import fused_marlin_moe
 from flag_gems.fused.fused_inv_rope_fp8_quant import fused_inv_rope_fp8_quant
+from flag_gems.fused.fused_marlin_moe import fused_marlin_moe
 from flag_gems.fused.fused_moe import (
     dispatch_fused_moe_kernel,
     fused_experts_impl,
@@ -105,6 +106,7 @@ __all__ = [
     "fused_marlin_moe",
     "fused_inv_rope_fp8_quant",
     "fused_q_kv_rmsnorm",
+    "fused_marlin_moe",
     "fused_recurrent_gated_delta_rule_fwd",
     "geglu",
     "gelu_and_mul",
