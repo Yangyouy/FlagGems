@@ -31,6 +31,8 @@ HASH_TOPK_LIST = [6, 8, 16] if not cfg.QUICK_MODE else [6, 8]
 HASH_RSF_LIST = [1.0, 2.5] if not cfg.QUICK_MODE else [1.0]
 
 try:
+    if flag_gems.vendor_name != "nvidia":
+        raise ImportError("vllm CUDA ops not compatible with non-NVIDIA backends")
     from vllm._custom_ops import topk_hash_softplus_sqrt as vllm_topk_softplus_sqrt
 
     HAS_VLLM = True
