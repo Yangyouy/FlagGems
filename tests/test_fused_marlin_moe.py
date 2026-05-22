@@ -14,7 +14,8 @@ import pytest
 import torch
 
 import flag_gems
-from flag_gems.fused.fused_marlin_moe import QUANT_TYPE_UINT4B8, fused_marlin_moe
+from flag_gems import fused_marlin_moe
+from flag_gems.fused.fused_marlin_moe import QUANT_TYPE_UINT4B8
 
 # -----------------------------------------------------------------------------
 # Local GPTQ uint4b8 quantization helper (self-contained, no vllm dependency).
