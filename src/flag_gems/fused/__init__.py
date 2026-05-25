@@ -20,6 +20,7 @@ from flag_gems.fused.fused_marlin_moe import (
     QUANT_TYPE_UINT8B128,
     fused_marlin_moe,
 )
+from flag_gems.fused.fused_inv_rope_fp8_quant import fused_inv_rope_fp8_quant
 from flag_gems.fused.fused_moe import (
     dispatch_fused_moe_kernel,
     fused_experts_impl,
@@ -107,6 +108,7 @@ __all__ = [
     "reglu",
     "reshape_and_cache",
     "reshape_and_cache_flash",
+    "fused_inv_rope_fp8_quant",
     "rwkv_ka_fusion",
     "rwkv_mm_sparsity",
     "silu_and_mul",
