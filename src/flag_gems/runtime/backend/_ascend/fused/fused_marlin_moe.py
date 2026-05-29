@@ -1,23 +1,26 @@
 # SPDX-License-Identifier: Apache-2.0
 """
-Fused Marlin MoE — Ascend specialization.
+Fused Marlin MoE — Ascend specialization (PyTorch fallback).
 
-Ascend 910B4's Triton compiler miscompiles the fused INT4-dequant + MoE-routing
-kernel (bit-manipulation + indirect addressing + tl.dot produces silent wrong
-results). Instead, we pre-dequantize INT4 weights to fp16/bf16 at the wrapper
-level and delegate to the existing Triton-based fused_experts_impl, which is
-already validated on Ascend.
+Ascend 910B4's Triton compiler (BiShengIR) has a confirmed bug where
+``tl.load(ptr, mask=condition, other=0.0)`` silently produces wrong results
+when the pointer is derived from memory-loaded indices (indirect addressing).
+This affects ALL MoE-style Triton kernels that use sorted_token_ids to index
+into the activation tensor, making a correct pure-Triton implementation
+infeasible on the current toolchain.
 
-Trade-off: 2x memory for dequantized weights (cached). Correctness is the
-priority; production memory optimization can revisit when the Ascend Triton
-compiler matures.
+The existing Ascend ``fused_experts_impl`` also fails (compilation crashes or
+produces NaN for most configurations), so we cannot delegate to it either.
+
+This fallback dequantizes INT4 weights to fp16/bf16 and performs the SwiGLU
+MoE computation in PyTorch. It is correct but slower than a native Triton
+implementation. Revisit when the Ascend Triton compiler fixes the masked-load
++ indirect-addressing bug.
 """
 
 from typing import Any, Callable, Optional
 
 import torch
-
-from .fused_moe import fused_experts_impl
 
 QUANT_TYPE_UINT4B8 = 0
 QUANT_TYPE_UINT8B128 = 1
@@ -34,18 +37,6 @@ def _dequantize_int4_weight(
     group_size: int,
     dtype: torch.dtype,
 ) -> torch.Tensor:
-    """
-    Dequantize INT4 packed weights to fp16/bf16.
-
-    Args:
-        w_packed: [E, N, K//2] uint8, two nibbles per byte (low=even k, high=odd k).
-        w_scale:  [E, N, K//group_size], same dtype as output.
-        group_size: quantization group size along K.
-        dtype: output dtype (float16 or bfloat16).
-
-    Returns:
-        w_fp: [E, N, K] in dtype, dequantized weights.
-    """
     key = (w_packed.data_ptr(), w_scale.data_ptr(), group_size, dtype)
     cached = _DEQUANT_CACHE.get(key)
     if cached is not None:
@@ -70,6 +61,48 @@ def _dequantize_int4_weight(
 
     _DEQUANT_CACHE[key] = w_fp
     return w_fp
+
+
+def _pytorch_swiglu_moe(
+    hidden_states: torch.Tensor,
+    w1: torch.Tensor,
+    w2: torch.Tensor,
+    topk_weights: torch.Tensor,
+    topk_ids: torch.Tensor,
+    apply_router_weight_on_input: bool = False,
+) -> torch.Tensor:
+    M, K = hidden_states.shape
+    E, two_N, _ = w1.shape
+    N = two_N // 2
+    topk = topk_ids.shape[1]
+
+    x = hidden_states.float()
+    out = torch.zeros(M, K, device=hidden_states.device, dtype=torch.float32)
+
+    for e in range(E):
+        mask = topk_ids == e
+        if not mask.any():
+            continue
+        token_indices, slot_indices = mask.nonzero(as_tuple=True)
+        weights = topk_weights[token_indices, slot_indices]
+        x_e = x[token_indices]
+
+        if apply_router_weight_on_input:
+            x_e = x_e * weights.unsqueeze(1)
+
+        gate_up = torch.mm(x_e, w1[e].float().t())
+        gate = gate_up[:, :N]
+        up = gate_up[:, N:]
+        activated = torch.nn.functional.silu(gate) * up
+
+        y = torch.mm(activated, w2[e].float().t())
+
+        if not apply_router_weight_on_input:
+            y = y * weights.unsqueeze(1)
+
+        out.index_add_(0, token_indices, y)
+
+    return out.to(hidden_states.dtype)
 
 
 def fused_marlin_moe(
@@ -148,18 +181,18 @@ def fused_marlin_moe(
     w1_fp = _dequantize_int4_weight(w1, w1_scale, group_size, dtype)
     w2_fp = _dequantize_int4_weight(w2, w2_scale, group_size, dtype)
 
-    result = fused_experts_impl(
+    result = _pytorch_swiglu_moe(
         hidden_states=hidden_states,
         w1=w1_fp,
         w2=w2_fp,
         topk_weights=topk_weights,
         topk_ids=topk_ids,
-        inplace=inplace,
-        activation=activation_str,
         apply_router_weight_on_input=apply_router_weight_on_input,
-        global_num_experts=global_num_experts,
-        expert_map=expert_map,
     )
+
+    if inplace:
+        hidden_states.copy_(result)
+        return hidden_states
 
     if output is not None:
         output.copy_(result)
