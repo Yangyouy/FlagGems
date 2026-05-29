@@ -65,6 +65,7 @@ from .pow import (
 from .randperm import randperm
 from .repeat_interleave import repeat_interleave_self_int
 from .resolve_neg import resolve_neg
+from .router_gemm import router_gemm
 from .rms_norm import rms_norm
 from .scatter import scatter, scatter_
 from .scatter_add_ import scatter_add_
@@ -170,6 +171,7 @@ __all__ = [
     "repeat_interleave_self_int",
     "resolve_neg",
     "rms_norm",
+    "router_gemm",
     "scatter",
     "scatter_",
     "scatter_add_",
