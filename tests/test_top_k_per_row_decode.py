@@ -12,7 +12,7 @@ import torch
 import triton.language as tl
 
 import flag_gems
-from flag_gems.fused import top_k_per_row_decode
+from flag_gems import top_k_per_row_decode
 
 from . import conftest as cfg
 
@@ -28,9 +28,13 @@ def _has_histogram_mask():
         return False
 
 
+def _has_histogram():
+    return hasattr(tl, "histogram")
+
+
 pytestmark = pytest.mark.skipif(
-    not _has_histogram_mask(),
-    reason="tl.histogram with mask parameter not available",
+    not _has_histogram_mask() and not _has_histogram(),
+    reason="tl.histogram not available",
 )
 
 # --- Shape configuration with QUICK_MODE support ---
