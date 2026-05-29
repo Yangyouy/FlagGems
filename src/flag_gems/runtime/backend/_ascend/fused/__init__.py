@@ -15,6 +15,7 @@ from .rotary_embedding import apply_rotary_pos_emb
 from .skip_layernorm import skip_layer_norm
 from .sparse_attention import sparse_attn_triton
 from .top_k_per_row_prefill import top_k_per_row_prefill
+from .topk_softplus_sqrt import topk_softplus_sqrt
 
 __all__ = [
     "cross_entropy_loss",
@@ -33,4 +34,5 @@ __all__ = [
     "invoke_fused_moe_triton_kernel",
     "outplace_fused_experts",
     "top_k_per_row_prefill",
+    "topk_softplus_sqrt",
 ]
