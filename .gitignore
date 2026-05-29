@@ -34,3 +34,6 @@ tests/*.json
 *.ipa
 *.apk
 .claude/
+
+# Generated benchmark data (lives in gh-pages only)
+docs/benchmark/
