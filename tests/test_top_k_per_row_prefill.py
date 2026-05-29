@@ -14,13 +14,13 @@ import pytest
 import torch
 
 import flag_gems
-from flag_gems.fused import top_k_per_row_prefill
+from flag_gems import top_k_per_row_prefill
 
 device = flag_gems.device
 
 pytestmark = pytest.mark.skipif(
-    not torch.cuda.is_available(),
-    reason="CUDA device required",
+    not (torch.cuda.is_available() or torch.npu.is_available()),
+    reason="CUDA or NPU device required",
 )
 
 

@@ -25,6 +25,7 @@ from flag_gems.fused.FLA import (
 from flag_gems.fused.flash_mla import flash_mla
 from flag_gems.fused.flashmla_sparse import flash_mla_sparse_fwd
 from flag_gems.fused.fused_add_rms_norm import fused_add_rms_norm
+from flag_gems.fused.fused_marlin_moe import fused_marlin_moe
 from flag_gems.fused.fused_deepseek_v4_qnorm_rope_kv_rope_quant_insert import (
     fused_deepseek_v4_qnorm_rope_kv_rope_quant_insert,
 )
@@ -99,6 +100,7 @@ __all__ = [
     "flash_mla",
     "flash_mla_sparse_fwd",
     "fused_add_rms_norm",
+    "fused_marlin_moe",
     "fused_deepseek_v4_qnorm_rope_kv_rope_quant_insert",
     "fused_experts_impl",
     "fused_inv_rope_fp8_quant",

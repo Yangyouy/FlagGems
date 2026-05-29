@@ -1,6 +1,7 @@
 from .cross_entropy_loss import cross_entropy_loss
 from .flash_mla import flash_mla
 from .fused_add_rms_norm import fused_add_rms_norm
+from .fused_marlin_moe import fused_marlin_moe
 from .fused_moe import (
     dispatch_fused_moe_kernel,
     fused_experts_impl,
@@ -13,12 +14,14 @@ from .moe_sum import moe_sum
 from .rotary_embedding import apply_rotary_pos_emb
 from .skip_layernorm import skip_layer_norm
 from .sparse_attention import sparse_attn_triton
+from .top_k_per_row_prefill import top_k_per_row_prefill
 
 __all__ = [
     "cross_entropy_loss",
     "apply_rotary_pos_emb",
     "flash_mla",
     "fused_add_rms_norm",
+    "fused_marlin_moe",
     "skip_layer_norm",
     "sparse_attn_triton",
     "moe_align_block_size",
@@ -29,4 +32,5 @@ __all__ = [
     "inplace_fused_experts",
     "invoke_fused_moe_triton_kernel",
     "outplace_fused_experts",
+    "top_k_per_row_prefill",
 ]

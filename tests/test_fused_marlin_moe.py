@@ -14,7 +14,9 @@ import pytest
 import torch
 
 import flag_gems
-from flag_gems.fused.fused_marlin_moe import QUANT_TYPE_UINT4B8, fused_marlin_moe
+from flag_gems.fused.fused_marlin_moe import QUANT_TYPE_UINT4B8
+
+fused_marlin_moe = flag_gems.fused_marlin_moe
 
 # -----------------------------------------------------------------------------
 # Local GPTQ uint4b8 quantization helper (self-contained, no vllm dependency).
@@ -209,7 +211,7 @@ def _reference_swiglu_moe(hidden_states, w1_ref, w2_ref, topk_weights, topk_ids)
     return out
 
 
-@pytest.mark.skip(reason="Issue #3441: The operator is not stable.")
+# @pytest.mark.skip(reason="Issue #3441: The operator is not stable.")
 @pytest.mark.parametrize("config", QUICK_CONFIGS)
 @pytest.mark.parametrize("dtype", [torch.bfloat16, torch.float16])
 def test_fused_marlin_moe_vs_ref(config, dtype):
@@ -240,7 +242,10 @@ def test_fused_marlin_moe_vs_ref(config, dtype):
         quant_type_id=QUANT_TYPE_UINT4B8,
     )
     ref = _reference_swiglu_moe(hs, w1_ref, w2_ref, tw, ti)
-    torch.cuda.synchronize()
+    if hasattr(torch, "npu") and torch.npu.is_available():
+        torch.npu.synchronize()
+    elif torch.cuda.is_available():
+        torch.cuda.synchronize()
 
     rtol = 1e-1
     atol = max(5e-2, ref.abs().max().item() * 1e-3)
@@ -252,7 +257,7 @@ def test_fused_marlin_moe_vs_ref(config, dtype):
 # -----------------------------------------------------------------------------
 
 
-def _minimal_args(device="cuda", dtype=torch.bfloat16):
+def _minimal_args(device=flag_gems.device, dtype=torch.bfloat16):
     """Smallest valid arg bundle, used to probe rejection paths."""
     M, K, N, E, topk = 4, 128, 256, 4, 2
     return _make_inputs(M, E, K, N, topk, dtype, device)
